@@ -1,0 +1,146 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Serverless cloud-based to-do list demo.
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Handler: lambda_function.handler
+    Timeout: 10
+    MemorySize: 128
+
+Resources:
+  TaskApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: $default
+      CorsConfiguration:
+        AllowOrigins:
+          - '*'
+        AllowHeaders:
+          - content-type
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+          - OPTIONS
+        MaxAge: 600
+
+  TasksTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: ownerId
+          AttributeType: S
+        - AttributeName: taskId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: ownerId
+          KeyType: HASH
+        - AttributeName: taskId
+          KeyType: RANGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+
+  TaskAudioBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+            AllowedOrigins:
+              - '*'
+            ExposedHeaders:
+              - ETag
+            MaxAge: 3000
+
+  TaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Environment:
+        Variables:
+          TASKS_TABLE: !Ref TasksTable
+          AUDIO_BUCKET: !Ref TaskAudioBucket
+          AUDIO_OBJECT_KEY: task-completed.mp3
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:Query
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:DeleteItem
+              Resource: !GetAtt TasksTable.Arn
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+              Resource: !Sub '${TaskAudioBucket.Arn}/task-completed.mp3'
+      Events:
+        ListTasks:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref TaskApi
+            Path: /tasks
+            Method: GET
+        CreateTask:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref TaskApi
+            Path: /tasks
+            Method: POST
+        UpdateTask:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref TaskApi
+            Path: /tasks/{taskId}
+            Method: PUT
+        CompleteTask:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref TaskApi
+            Path: /tasks/{taskId}
+            Method: PATCH
+        DeleteTask:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref TaskApi
+            Path: /tasks/{taskId}
+            Method: DELETE
+        CompletionSound:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref TaskApi
+            Path: /audio-url
+            Method: GET
+
+Outputs:
+  ApiBaseUrl:
+    Description: Set this as apiBaseUrl in frontend/config.js before hosting the frontend.
+    Value: !Sub 'https://${TaskApi}.execute-api.${AWS::Region}.amazonaws.com'
+  TaskAudioBucketName:
+    Description: Private S3 bucket for task-completed.mp3.
+    Value: !Ref TaskAudioBucket
+  TasksTableName:
+    Description: Persistent DynamoDB table name.
+    Value: !Ref TasksTable

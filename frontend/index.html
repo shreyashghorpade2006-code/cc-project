@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f6fb">
+  <title>Cloud-Based To-Do List</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/config.js"></script>
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="page-header">
+      <div>
+        <p class="eyebrow">Your cloud workspace</p>
+        <h1>Cloud-Based <span>To-Do List</span></h1>
+        <p class="subtitle">Make space for what matters. One task at a time.</p>
+      </div>
+      <div class="cloud-badge"><span aria-hidden="true">☁</span> Saved automatically</div>
+    </header>
+
+    <section class="stats" aria-label="Task statistics">
+      <article class="stat-card"><span class="stat-icon total-icon" aria-hidden="true">▤</span><div><p>Total tasks</p><strong id="total-count">0</strong></div></article>
+      <article class="stat-card"><span class="stat-icon pending-icon" aria-hidden="true">◷</span><div><p>Pending</p><strong id="pending-count">0</strong></div></article>
+      <article class="stat-card"><span class="stat-icon completed-icon" aria-hidden="true">✓</span><div><p>Completed</p><strong id="completed-count">0</strong></div></article>
+    </section>
+
+    <section class="card composer" aria-labelledby="create-heading">
+      <div class="section-heading">
+        <div><p class="eyebrow">Plan your next step</p><h2 id="create-heading">Add a task</h2></div>
+        <span class="heading-sparkle" aria-hidden="true">✦</span>
+      </div>
+      <form id="task-form">
+        <label for="task-title">Task title</label>
+        <input id="task-title" name="title" maxlength="100" placeholder="e.g. Finish cloud computing presentation" required>
+        <label for="task-description">Description <span class="optional">(optional)</span></label>
+        <textarea id="task-description" name="description" rows="3" maxlength="2000" placeholder="Add a few details to help you get started..."></textarea>
+        <div class="form-footer"><span class="hint">Your tasks are saved automatically.</span><button class="primary-button" id="add-button" type="submit"><span aria-hidden="true">＋</span> Add task</button></div>
+      </form>
+    </section>
+
+    <section class="task-section" aria-labelledby="list-heading">
+      <div class="list-header">
+        <div><p class="eyebrow">Your dashboard</p><h2 id="list-heading">My tasks</h2></div>
+        <nav class="filters" aria-label="Filter tasks">
+          <button class="filter active" type="button" data-filter="all">All <span id="all-filter-count">0</span></button>
+          <button class="filter" type="button" data-filter="pending">Pending</button>
+          <button class="filter" type="button" data-filter="completed">Completed</button>
+        </nav>
+      </div>
+      <div class="task-list" id="task-list" aria-live="polite"></div>
+    </section>
+    <p class="message" id="message" role="status" aria-live="polite"></p>
+    <footer>Built for focus. Powered by the cloud.</footer>
+  </main>
+</body>
+</html>
